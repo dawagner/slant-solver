@@ -161,7 +161,11 @@ class Road():
 		"""
 		couple = next(c for c in self.couples if corner in c)
 		self.connection = couple
+
+	def get_neighbor(self, corner):
+		couple = next(c for c in self.couples if corner in c)
 		other = next(c for c in couple if corner != c)
+		return other
 
 	# TODO: route_other
 
