@@ -34,9 +34,9 @@ class Corner():
 	    the game
 	"""
 
-	def __init__(self, x, y): #, hintValue):
+	def __init__(self, x, y):
 		self.x, self.y = x, y
-		self.hintValue = None
+		self.hint = None
 		# quadrants are defined in the trigo order:
 		# 2 | 1 
 		#---x---
@@ -54,7 +54,7 @@ class Corner():
 		return self.x == other.x and self.y == other.y
 
 	def __repr__(self):
-		return "<Corner (%d, %d): %s>" % (self.x, self.y, self.hintValue)
+		return "<Corner (%d, %d): %s>" % (self.x, self.y, self.hint)
 
 	def get_neighbor_coords(self, quadrant):
 		addVector = [(1, -1), (-1, -1), (-1, 1), (1, 1)]
@@ -100,6 +100,43 @@ class Corner():
 
 	def unroute(self, quadrant):
 		self.get_road(quadrant).unroute()
+
+	def get_nb_connected_roads(self):
+		return sum(q.is_routed(self)
+				for q in self.quadrants
+				if q)
+
+	def get_nb_undecided_roads(self):
+		return sum(not q.is_routed(None)
+				for q in self.quadrants
+				if q)
+
+	def try_solve(self):
+		""" Return the nb of yet-to-be-solved roads
+		"""
+		if self.hint is None:
+			return self.get_nb_undecided_roads()
+
+		if self.get_nb_undecided_roads() == self.hint and self.hint == 0:
+			return 0
+
+		if self.get_nb_undecided_roads() == self.hint:
+			print("let's route all my surrounding")
+			for q in self.quadrants:
+				if q is None:
+					continue
+				if not q.is_routed(None):
+					q.route(self)
+
+		if self.get_nb_connected_roads() == self.hint:
+			print("let's anti-route all my surrounding")
+			for q in self.quadrants:
+				if q is None:
+					continue
+				if not q.is_routed(None):
+					q.route_other(self)
+
+		return self.get_nb_undecided_roads()
 
 	@classmethod
 	def create(cls, board, x, y, fromQuadrant):
@@ -162,17 +199,27 @@ class Road():
 		couple = next(c for c in self.couples if corner in c)
 		self.connection = couple
 
-	def get_neighbor(self, corner):
-		couple = next(c for c in self.couples if corner in c)
-		other = next(c for c in couple if corner != c)
-		return other
-
-	# TODO: route_other
+	def route_other(self, corner):
+		""" Connect the other pair than this corner's
+		"""
+		couple = next(c for c in self.couples if corner not in c)
+		self.connection = couple
 
 	def unroute(self):
 		""" Remove the current connection
 		"""
 		self.connection = None
+
+	def get_neighbor(self, corner):
+		couple = next(c for c in self.couples if corner in c)
+		other = next(c for c in couple if corner != c)
+		return other
+
+	def is_routed(self, corner=None):
+		any = self.connection is not None
+		if corner is None:
+			return any
+		return any and corner in self.connection
 
 	def __repr__(self):
 		couples = ["***%s***" % (c,)
@@ -189,12 +236,51 @@ class Road():
 	@classmethod
 	def get(cls, x, y):
 		#print("road: %s" % ((x, y),))
-		if not cls.__roads[x][y]:
+		if cls.__roads[x][y] is None:
 			cls.__roads[x][y] = Road()
 		return cls.__roads[x][y]
 
 def build(size):
 	return Board(size)
+
+def test():
+	b = build(3)
+
+	b.get(1,0).hint = 1
+	b.get(0,1).hint = 1
+	b.get(0,2).hint = 0
+	b.get(1,2).hint = 1
+
+	#b.get(0,1).route(4)
+	#b.get(1,1).route(4)
+	#b.get(0,0).route(4)
+	#b.get(1,0).route(4)
+
+	print("nb of connections for (1,1):%d" %
+			b.get(1, 1).get_nb_connected_roads())
+	print("nb of undecided Roads around (1,1):%d" %
+			b.get(1, 1).get_nb_undecided_roads())
+
+	return b
+
+test_solve_board = None
+def solve():
+	global test_solve_board
+
+	if test_solve_board is None:
+		test_solve_board = test()
+	else:
+		print("continue")
+
+	b = test_solve_board
+
+	for col in b.board:
+		for corner in col:
+			if corner.hint is None:
+				continue
+			left = corner.try_solve()
+			print("%d left" % left)
+
 
 if __name__ == "__main__":
 	board = build(int(sys.argv[1]))
