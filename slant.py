@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 import sys
 
 
@@ -28,6 +30,35 @@ class Board():
 
 	def __repr__(self):
 		return self.board.__repr__()
+
+	def render(self):
+		s = []
+		#s.append([""] * self.size)
+		for i_col, col in enumerate(self.board):
+			if i_col > 0:
+				s.append([" "])
+			s.append([])
+			for i_line, corner in enumerate(col):
+				strHint = (str(corner.hint)
+					if corner.hint is not None
+					else ".")
+				s[-1].append(strHint)
+
+				if i_col > 0 and i_line > 0:
+					strRoute = " "
+					if corner.quadrants[1].connection is None:
+						strRoute = " "
+					elif corner in corner.quadrants[1].connection:
+						strRoute = "\\"
+					else:
+						strRoute = "/"
+					s[-2].append(strRoute)
+
+		print(s)
+		rectS = [''.join(l) for l in zip(*s)]
+
+		print("\n".join(rectS))
+
 
 class Corner():
 	""" A "Node" (that can have a value between 0 and 4 or no value) in
@@ -102,22 +133,80 @@ class Corner():
 		self.get_road(quadrant).unroute()
 
 	def get_nb_connected_roads(self):
-		return sum(q.is_routed(self)
-				for q in self.quadrants
-				if q)
+		return len(list(self.get_quadrants(True)))
+		#return sum(q.is_routed(self)
+		#		for q in self.quadrants
+		#		if q)
 
 	def get_nb_undecided_roads(self):
-		return sum(not q.is_routed(None)
-				for q in self.quadrants
-				if q)
+		return len(list(self.get_quadrants(False)))
+		#return sum(not q.is_routed(None)
+		#		for q in self.quadrants
+		#		if q)
+
+	def get_quadrants(self, routed=None):
+		for q in self.quadrants:
+			if q is None:
+				continue
+
+			if routed is None:
+				yield q
+			if routed is True and q.is_routed(None):
+				yield q
+			elif routed is False and not q.is_routed(None):
+				yield q
+
+	def is_looped(self, quadrant=None):
+		"""@quadrant is a hint for the direction to take first"""
+		if quadrant is None:
+			for q in self.get_quadrants(True):
+				if self.is_looped(q):
+					return True
+			return False
+
+		def get_neighbors(corner, ignore_quadrant):
+			others = []
+			for q in corner.get_quadrants(True):
+				if q == ignore_quadrant:
+					continue
+				others.append((q.get_neighbor(corner), q))
+
+			return others
+
+		# Replace with a real FIFO
+		corner_fifo = []
+		visited = set()
+		corner = quadrant.get_neighbor(self)
+		corner_fifo.append((corner, quadrant))
+
+		while corner_fifo:
+			corner, from_quadrant = corner_fifo.pop(0)
+			print("corner: ")
+			if corner in visited:
+				return True
+			visited.add(corner)
+			neighbors = get_neighbors(corner, from_quadrant)
+			print("neighbors: %s" % neighbors)
+			corner_fifo.extend(neighbors)
+		else:
+			print("No loop")
+
+		return False
+
+
+
 
 	def try_solve(self):
 		""" Return the nb of yet-to-be-solved roads
 		"""
+		print("Solving %s" % self)
 		if self.hint is None:
 			return self.get_nb_undecided_roads()
 
 		if self.get_nb_undecided_roads() == self.hint and self.hint == 0:
+			return 0
+
+		if self.get_nb_undecided_roads() == 0:
 			return 0
 
 		if self.get_nb_undecided_roads() == self.hint:
@@ -136,7 +225,37 @@ class Corner():
 				if not q.is_routed(None):
 					q.route_other(self)
 
+		if self.get_nb_undecided_roads() != 0:
+			print("let's try to make loops")
+			self.try_solve_loops()
+
 		return self.get_nb_undecided_roads()
+
+
+	def try_solve_loops(self):
+		for q in self.get_quadrants(False):
+			print("trying %s" % q)
+			# If this loops, then the correct solution is
+			# the other connection
+			q.route(self)
+			if self.is_looped(q):
+				print("self loops.  routing other")
+				q.route_other(self)
+				continue
+
+			# If this loops, then the correct solution is
+			# the connection from this corner (self)
+			q.route_other(self)
+			if q.connection[0].is_looped(q):
+				print("other loops.  routing self")
+				q.route(self)
+				continue
+
+			# If nothing loops, we have no way to tell
+			q.unroute()
+			print("Can't decide the loop")
+
+
 
 	@classmethod
 	def create(cls, board, x, y, fromQuadrant):
@@ -230,6 +349,10 @@ class Road():
 		return "<Road %s>" % "; ".join(couples)
 
 	@classmethod
+	def __iter__(cls):
+		return cls.__roads.__iter__()
+
+	@classmethod
 	def init(cls, size):
 		cls.__roads = [[None for i in range(size)] for i in range(size)]
 
@@ -246,10 +369,13 @@ def build(size):
 def test():
 	b = build(3)
 
-	b.get(1,0).hint = 1
-	b.get(0,1).hint = 1
-	b.get(0,2).hint = 0
-	b.get(1,2).hint = 1
+	#b.get(1,0).hint = 1
+	#b.get(0,1).hint = 1
+	#b.get(0,2).hint = 0
+	#b.get(1,2).hint = 1
+
+	b.get(1, 0).hint = 2
+	b.get(0, 2).hint = 0
 
 	#b.get(0,1).route(4)
 	#b.get(1,1).route(4)
