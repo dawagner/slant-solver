@@ -164,50 +164,13 @@ class Corner():
     def is_looped(self, quadrant=None):
         """@quadrant is a hint for the direction to take first"""
         if quadrant is None:
-            for q in self.get_quadrants(True):
+            for q in self.get_quadrants(True, True):
                 if self.is_looped(q):
                     return True
             return False
 
-        first_neighbor = quadrant.get_neighbor(self)
-
-        # ignore_quadrant is harmful the first time
-        def get_neighbors(corner, ignore_quadrant):
-            others = []
-            for q in corner.get_quadrants(True):
-                # Is it the quadrant we come from ?
-                # Then ignore
-                if q == ignore_quadrant:
-                    continue
-                # Does this quadrant connects the corner we
-                # are on to anything ?
-                # Then, it's a valid neighbor
-                if corner in q.connection:
-                    others.append((q.get_neighbor(corner), q))
-
-            return others
-
-        # Replace with a real FIFO
-        corner_fifo = []
-        visited = set()
-        corner_fifo.append((first_neighbor, None))
-
-        while corner_fifo:
-            corner, from_quadrant = corner_fifo.pop(0)
-            print("corner: %s" % corner)
-            if corner in visited:
-                return True
-            visited.add(corner)
-            neighbors = get_neighbors(corner, from_quadrant)
-            print("neighbors: %s" % neighbors)
-            corner_fifo.extend(neighbors)
-        else:
-            print("No loop")
-
-        return False
-
-
-
+        solver = LoopSolver(self, quadrant)
+        return solver.solve()
 
     def try_solve(self):
         """ Return the nb of yet-to-be-solved roads
@@ -316,6 +279,14 @@ class Corner():
 
 
 class LoopSolver():
+
+    def __init__(self, corner, quadrant):
+        self.orig_corner = corner
+        self.orig_quadrant = quadrant
+        # Replace with a real FIFO
+        self.corner_fifo = []
+        self.visited = set()
+
     def get_neighbors(self, corner, ignore_quadrant):
         others = []
         for q in corner.get_quadrants(True):
@@ -332,7 +303,22 @@ class LoopSolver():
         return others
 
     def solve(self):
-        pass
+        first_neighbor = self.orig_quadrant.get_neighbor(self.orig_corner)
+        self.corner_fifo.append((first_neighbor, None))
+
+        while self.corner_fifo:
+            corner, from_quadrant = self.corner_fifo.pop(0)
+            print("corner: %s" % corner)
+            if corner in self.visited:
+                return True
+            self.visited.add(corner)
+            neighbors = self.get_neighbors(corner, from_quadrant)
+            print("neighbors: %s" % neighbors)
+            self.corner_fifo.extend(neighbors)
+        else:
+            print("No loop")
+
+        return False
 
 class Road():
     __roads = []
