@@ -136,30 +136,29 @@ class Corner():
 
     def get_nb_connected_roads(self):
         return len(list(self.get_quadrants(True, True)))
-        #return sum(q.is_routed(self)
-        #       for q in self.quadrants
-        #       if q)
 
     def get_nb_undecided_roads(self):
         return len(list(self.get_quadrants(False)))
-        #return sum(not q.is_routed(None)
-        #       for q in self.quadrants
-        #       if q)
 
-    def get_quadrants(self, routed=None, connects_self=False):
+    def get_quadrants(self, routed=None, to_self=False):
         for q in self.quadrants:
             if q is None:
                 continue
 
             if routed is None:
                 yield q
-            if routed is True:
-                if connects_self and q.is_routed(self):
+
+            elif routed is True:
+                if to_self and q.is_routed(self):
                     yield q
-                elif not connects_self and q.is_routed(None):
+                elif not to_self and q.is_routed(None):
                     yield q
-            elif routed is False and not q.is_routed(None):
-                yield q
+
+            elif routed is False:
+                if to_self and not q.is_routed(self):
+                    yield q
+                elif not to_self and not q.is_routed(None):
+                    yield q
 
     def is_looped(self, quadrant=None):
         """@quadrant is a hint for the direction to take first"""
@@ -176,17 +175,17 @@ class Corner():
         """ Return the nb of yet-to-be-solved roads
         """
         global test_solve_board
-        print("Solving %s" % self)
-        if self.hint is None:
-            self.try_solve_loops()
-            test_solve_board.render()
-            return self.get_nb_undecided_roads()
-
-        if self.get_nb_undecided_roads() == self.hint and self.hint == 0:
-            return 0
 
         if self.get_nb_undecided_roads() == 0:
             return 0
+
+        print("Solving %s" % self)
+
+        # If this corner has no hint, the only chance to solve it resides in
+        # finding a loop
+        if self.hint is None:
+            self.try_solve_loops()
+            return self.get_nb_undecided_roads()
 
         max_potential = (
             self.get_nb_undecided_roads()
@@ -194,25 +193,23 @@ class Corner():
             )
         if max_potential == self.hint:
             print("let's route all my surrounding")
-            for q in self.quadrants:
-                if q is None:
-                    continue
-                if not q.is_routed(None):
-                    q.route(self)
+            for q in self.get_quadrants(False):
+                q.route(self)
+
+            return 0
 
         if self.get_nb_connected_roads() == self.hint:
             print("let's anti-route all my surrounding")
-            for q in self.quadrants:
-                if q is None:
-                    continue
-                if not q.is_routed(None):
-                    q.route_other(self)
+            for q in self.get_quadrants(False):
+                q.route_other(self)
+
+            return 0
 
         if self.get_nb_undecided_roads() != 0:
             print("let's try to make loops")
             self.try_solve_loops()
 
-        test_solve_board.render()
+            return 0
 
         return self.get_nb_undecided_roads()
 
@@ -241,7 +238,6 @@ class Corner():
             print("Can't decide the loop")
 
 
-
     @classmethod
     def create(cls, board, x, y, fromQuadrant):
         c = cls(x, y)
@@ -256,30 +252,29 @@ class Corner():
         def _walk(nextQuadrant):
             coords = c.get_neighbor_coords(nextQuadrant)
             if nextQuadrant != fromQuadrant:
-                c.link(cls.create(board, coords[0], coords[1], nextQuadrant), nextQuadrant)
+                c.link(
+                    cls.create(
+                        board,
+                        coords[0], coords[1],
+                        nextQuadrant),
+                    nextQuadrant)
 
         if y > 0:
             if x < board.size - 1:
-                #print("toward 1")
                 _walk(1)
 
             if x > 0:
-                #print("toward 2")
                 _walk(2)
 
         if y < board.size - 1:
             if x > 0:
-                #print("toward 3")
                 _walk(3)
             # Never walk the 4th quadrant
-
-        #print("Fin du chemin pour %s" % c)
 
         return c
 
 
 class LoopSolver():
-
     def __init__(self, corner, quadrant):
         self.orig_corner = corner
         self.orig_quadrant = quadrant
@@ -441,6 +436,7 @@ def solve():
         for corner in col:
             left = corner.try_solve()
             print("%d left" % left)
+            test_solve_board.render()
 
 
 if __name__ == "__main__":
