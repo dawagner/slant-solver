@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
+import itertools
 
 
 class Board():
@@ -21,6 +22,10 @@ class Board():
         # able to.
         Corner.create(self, size-1, size-1, 2)
         Corner.create(self, size-2, size-1, 2)
+
+    def __iter__(self):
+        for corner in itertools.chain(*self.board):
+            yield corner
 
     def add(self, corner):
         self.board[corner.x][corner.y] = corner
@@ -140,6 +145,9 @@ class Corner():
     def get_nb_undecided_roads(self):
         return len(list(self.get_quadrants(False)))
 
+    def is_solved(self):
+        return self.get_nb_undecided_roads() == 0
+
     def get_quadrants(self, routed=None, to_self=False):
         for q in self.quadrants:
             if q is None:
@@ -177,15 +185,20 @@ class Corner():
         global test_solve_board
 
         if self.get_nb_undecided_roads() == 0:
-            return 0
+            return 0, []
 
         print("Solving %s" % self)
+
+        # This list will contain the nodes around newly solved quadrants
+        # try_solve() will be called on them next
+        next_candidates = set()
 
         # If this corner has no hint, the only chance to solve it resides in
         # finding a loop
         if self.hint is None:
             self.try_solve_loops()
-            return self.get_nb_undecided_roads()
+            # TODO: fill nexy_candidates
+            return self.get_nb_undecided_roads(), []
 
         max_potential = (
             self.get_nb_undecided_roads()
@@ -195,23 +208,26 @@ class Corner():
             print("let's route all my surrounding")
             for q in self.get_quadrants(False):
                 q.route(self)
+                next_candidates.update(q.get_all_corners())
 
-            return 0
+            return 0, next_candidates
 
         if self.get_nb_connected_roads() == self.hint:
             print("let's anti-route all my surrounding")
             for q in self.get_quadrants(False):
                 q.route_other(self)
+                next_candidates.update(q.get_all_corners())
 
-            return 0
+            return 0, next_candidates
 
         if self.get_nb_undecided_roads() != 0:
             print("let's try to make loops")
             self.try_solve_loops()
+            # TODO: fill nexy_candidates
 
-            return 0
+            return 0, []
 
-        return self.get_nb_undecided_roads()
+        return self.get_nb_undecided_roads(), next_candidates
 
 
     def try_solve_loops(self):
@@ -303,12 +319,12 @@ class LoopSolver():
 
         while self.corner_fifo:
             corner, from_quadrant = self.corner_fifo.pop(0)
-            print("corner: %s" % corner)
+            #print("corner: %s" % corner)
             if corner in self.visited:
                 return True
             self.visited.add(corner)
             neighbors = self.get_neighbors(corner, from_quadrant)
-            print("neighbors: %s" % neighbors)
+            #print("neighbors: %s" % neighbors)
             self.corner_fifo.extend(neighbors)
         else:
             print("No loop")
@@ -357,6 +373,9 @@ class Road():
         other = next(c for c in couple if corner != c)
         return other
 
+    def get_all_corners(self):
+        return itertools.chain(*self.couples)
+
     def is_routed(self, corner=None):
         any = self.connection is not None
         if corner is None:
@@ -390,6 +409,7 @@ def build(size):
     return Board(size)
 
 def test():
+    """test function"""
     b = build(6)
 
     #b.get(1,0).hint = 1
@@ -423,6 +443,7 @@ def test():
 
 test_solve_board = None
 def solve():
+    """test function"""
     global test_solve_board
 
     if test_solve_board is None:
@@ -432,12 +453,34 @@ def solve():
 
     b = test_solve_board
 
-    for col in b.board:
-        for corner in col:
-            left = corner.try_solve()
+    def get_unsolved():
+        for corner in b:
+            if not corner.is_solved():
+                yield corner
+
+    candidates_fifo = []
+    unsolved_corners = get_unsolved()
+
+    passes = useless_passes = 0
+
+    for corner in unsolved_corners:
+        candidates_fifo.append(corner)
+
+        while candidates_fifo:
+            corner = candidates_fifo.pop(0)
+            passes += 1
+            if corner.is_solved():
+                useless_passes += 1
+                continue
+
+            left, next_candidates = corner.try_solve()
+            candidates_fifo.extend(next_candidates)
+
             print("%d left" % left)
             test_solve_board.render()
 
+
+    print(passes, useless_passes)
 
 if __name__ == "__main__":
     board = build(int(sys.argv[1]))
