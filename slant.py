@@ -5,11 +5,11 @@ import itertools
 
 
 class Board():
-    def __init__(self, size):
-        self.board = [[None for i in range(size)] for i in range(size)]
-        self.size = size
+    def __init__(self, size_x, size_y):
+        self.board = [[None for i in range(size_y)] for i in range(size_x)]
+        self.size_x, self.size_y = size_x, size_y
 
-        Road.init(size)
+        Road.init(size_x, size_y)
         # the board is layout out with (0, 0) at the top-left
         # we need to create the first node (at the bottom-right) as if
         # we come from outside the board toward the second quadrant.
@@ -20,16 +20,16 @@ class Board():
         # separate roads, start from any node and by making only
         # diagonal moves, try to cover the whole board.  You won't be
         # able to.
-        Corner.create(self, size-1, size-1, 2)
-        Corner.create(self, size-2, size-1, 2)
+        Corner.create(self, size_x-1, size_y-1, 2)
+        Corner.create(self, size_x-2, size_y-1, 2)
 
     @staticmethod
     def from_sgt_string(sgt_string):
         size, corners = sgt_string.split(":")
         size_x, size_y = [int(s) + 1 for s in size.split("x")]
 
-        board = Board(size_x)
-        print("size: %d" % board.size)
+        board = Board(size_x, size_y)
+        print("size: %d, %d" % (board.size_x, board.size_y))
 
         current_position = 0
         for char in corners:
@@ -294,13 +294,13 @@ class Corner():
                     nextQuadrant)
 
         if y > 0:
-            if x < board.size - 1:
+            if x < board.size_x - 1:
                 _walk(1)
 
             if x > 0:
                 _walk(2)
 
-        if y < board.size - 1:
+        if y < board.size_y - 1:
             if x > 0:
                 _walk(3)
             # Never walk the 4th quadrant
@@ -414,8 +414,9 @@ class Road():
         return cls.__roads.__iter__()
 
     @classmethod
-    def init(cls, size):
-        cls.__roads = [[None for i in range(size)] for i in range(size)]
+    def init(cls, size_x, size_y):
+        cls.__roads = [[None for i in range(size_y)]
+                for i in range(size_x)]
 
     @classmethod
     def get(cls, x, y):
@@ -424,8 +425,8 @@ class Road():
             cls.__roads[x][y] = Road()
         return cls.__roads[x][y]
 
-def build(size):
-    return Board(size)
+def build(size_x, size_y):
+    return Board(size_x, size_y)
 
 def solve(board):
     solve_passes = 0
@@ -434,6 +435,7 @@ def solve(board):
         solve_passes += 1
         print(board)
         print(solve_passes, passes, useless_passes)
+        print("")
         if passes == 0:
             break
 
