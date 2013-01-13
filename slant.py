@@ -23,6 +23,28 @@ class Board():
         Corner.create(self, size-1, size-1, 2)
         Corner.create(self, size-2, size-1, 2)
 
+    @staticmethod
+    def from_sgt_string(sgt_string):
+        size, corners = sgt_string.split(":")
+        size_x, size_y = [int(s) + 1 for s in size.split("x")]
+
+        board = Board(size_x)
+        print("size: %d" % board.size)
+
+        current_position = 0
+        for char in corners:
+            if ord("a") <= ord(char) <= ord("z"):
+                current_position += ord(char) - ord("a") + 1
+            else:
+                x = current_position % size_x
+                y = current_position / size_x
+                print("char: %s; position: %d; x,y = %d, %d" %
+                        (char, current_position, x, y))
+                board.get(x, y).hint = int(char)
+                current_position += 1
+
+        return board
+
     def __iter__(self):
         for corner in itertools.chain(*self.board):
             yield corner
@@ -34,7 +56,7 @@ class Board():
         return self.board[x][y]
 
     def __repr__(self):
-        return self.board.__repr__()
+        return self.render()
 
     def render(self):
         s = []
@@ -47,7 +69,7 @@ class Board():
 
             rectS = [''.join(l) for l in zip(*s)]
 
-        print("\n".join(rectS))
+        return "\n".join(rectS)
 
     def render_column(self, s, index, column):
         for i_line, corner in enumerate(column):
@@ -187,7 +209,7 @@ class Corner():
         if self.get_nb_undecided_roads() == 0:
             return 0, []
 
-        print("Solving %s" % self)
+        #print("Solving %s" % self)
 
         # This list will contain the nodes around newly solved quadrants
         # try_solve() will be called on them next
@@ -205,7 +227,6 @@ class Corner():
             + self.get_nb_connected_roads()
             )
         if max_potential == self.hint:
-            print("let's route all my surrounding")
             for q in self.get_quadrants(False):
                 q.route(self)
                 next_candidates.update(q.get_all_corners())
@@ -213,7 +234,6 @@ class Corner():
             return 0, next_candidates
 
         if self.get_nb_connected_roads() == self.hint:
-            print("let's anti-route all my surrounding")
             for q in self.get_quadrants(False):
                 q.route_other(self)
                 next_candidates.update(q.get_all_corners())
@@ -221,7 +241,6 @@ class Corner():
             return 0, next_candidates
 
         if self.get_nb_undecided_roads() != 0:
-            print("let's try to make loops")
             self.try_solve_loops()
             # TODO: fill nexy_candidates
 
@@ -232,12 +251,11 @@ class Corner():
 
     def try_solve_loops(self):
         for q in self.get_quadrants(False):
-            print("trying %s" % q)
             # If this loops, then the correct solution is
             # the other connection
             q.route(self)
             if self.is_looped(q):
-                print("self loops.  routing other")
+                #print("self loops.  routing other")
                 q.route_other(self)
                 continue
 
@@ -245,13 +263,13 @@ class Corner():
             # the connection from this corner (self)
             q.route_other(self)
             if q.connection[0].is_looped(q):
-                print("other loops.  routing self")
+                #print("other loops.  routing self")
                 q.route(self)
                 continue
 
             # If nothing loops, we have no way to tell
             q.unroute()
-            print("Can't decide the loop")
+            #print("Can't decide the loop")
 
 
     @classmethod
@@ -327,7 +345,8 @@ class LoopSolver():
             #print("neighbors: %s" % neighbors)
             self.corner_fifo.extend(neighbors)
         else:
-            print("No loop")
+            #print("No loop")
+            pass
 
         return False
 
@@ -408,6 +427,47 @@ class Road():
 def build(size):
     return Board(size)
 
+def solve(board):
+    solve_passes = 0
+    while True:
+        passes, useless_passes = solve_pass(board)
+        solve_passes += 1
+        print(board)
+        print(solve_passes, passes, useless_passes)
+        if passes == 0:
+            break
+
+def solve_pass(board):
+    def get_unsolved(board):
+        for corner in board:
+            if not corner.is_solved():
+                yield corner
+
+    candidates_fifo = []
+    unsolved_corners = get_unsolved(board)
+
+    passes = useless_passes = 0
+
+    for corner in unsolved_corners:
+        candidates_fifo.append(corner)
+
+        while candidates_fifo:
+            corner = candidates_fifo.pop(0)
+            passes += 1
+            if corner.is_solved():
+                useless_passes += 1
+                continue
+
+            left, next_candidates = corner.try_solve()
+            candidates_fifo.extend(next_candidates)
+
+            #print("%d left" % left)
+            #print(board)
+
+
+    return passes, useless_passes
+
+
 def test():
     """test function"""
     b = build(6)
@@ -442,7 +502,7 @@ def test():
     return b
 
 test_solve_board = None
-def solve():
+def test_solve():
     """test function"""
     global test_solve_board
 
@@ -453,34 +513,7 @@ def solve():
 
     b = test_solve_board
 
-    def get_unsolved():
-        for corner in b:
-            if not corner.is_solved():
-                yield corner
-
-    candidates_fifo = []
-    unsolved_corners = get_unsolved()
-
-    passes = useless_passes = 0
-
-    for corner in unsolved_corners:
-        candidates_fifo.append(corner)
-
-        while candidates_fifo:
-            corner = candidates_fifo.pop(0)
-            passes += 1
-            if corner.is_solved():
-                useless_passes += 1
-                continue
-
-            left, next_candidates = corner.try_solve()
-            candidates_fifo.extend(next_candidates)
-
-            print("%d left" % left)
-            test_solve_board.render()
-
-
-    print(passes, useless_passes)
+    solve(b)
 
 if __name__ == "__main__":
     board = build(int(sys.argv[1]))
