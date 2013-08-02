@@ -114,6 +114,8 @@ goUp (current@HintNode{}, DownCrumb hint slantNode right@TopHintNode{} : cs) =
 	(TopHintNode{right = right, down = current, hint = hint, slantNode = slantNode},
 	 cs)
 
+-- Contrary to the next match, the current is a top node but is on the right
+-- of the board and thus doesn't have a right-neighbour
 goUp (current@HintNode{}, DownCrumb hint slantNode NoNode : rcs@RightCrumb{} : cs) =
 	(TopHintNode{right = NoNode, down = current, hint = hint, slantNode = slantNode},
 	 rcs : cs)
