@@ -127,11 +127,19 @@ goTop zip@(node, [crumb]) = goUp zip
 goTop zip@(node, crumbs) = goTop (goUp zip)
 
 
+-- TODO: make 'setHint' and 'setSlant' functions to be called by the following
+-- ones ?
 --
 -- change Hint At
 --
 setHintAt :: SlantZipper -> Hint -> SlantZipper
 setHintAt (node, crumbs) hint = (node{hint = hint}, crumbs)
+
+--
+-- change Slant At
+--
+setSlantAt :: SlantZipper -> SlantNode' -> SlantZipper
+setSlantAt (node, crumbs) slant = (node{slantNode = slant}, crumbs)
 
 --
 -- add a node at
