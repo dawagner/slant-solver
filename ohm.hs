@@ -79,14 +79,15 @@ addDown _ _ = error "This node already has a down neighbour"
 -- go RIGHT --
 --
 goRight :: SlantZipper -> SlantZipper
-goRight (TopHintNode down right@TopHintNode{} hint slantNode, crumbs) =
-        (right, RightCrumb hint slantNode down : crumbs)
+goRight (current@TopHintNode{right = right@TopHintNode{}}, crumbs) =
+        (right,
+	 RightCrumb (hint current) (slantNode current) (down current) : crumbs)
 
 -- TODO
-goRight (TopHintNode down NoNode hint slantNode, crumbs) = error "nothing on the right"
+goRight (TopHintNode{right = NoNode}, _) = error "nothing on the right"
 
 -- TODO
-goRight node@(HintNode down hint slantNode, crumbs) =
+goRight node@(HintNode{}, _) =
 	goDown . goRight . goUp $ node
 
 
@@ -94,15 +95,15 @@ goRight node@(HintNode down hint slantNode, crumbs) =
 -- go DOWN --
 --
 goDown :: SlantZipper -> SlantZipper
-goDown (TopHintNode down right hint slantNode, crumbs) =
-	(down,
-	 DownCrumb hint slantNode right : crumbs)
+goDown (current@TopHintNode{}, crumbs) =
+	(down current,
+	 DownCrumb (hint current) (slantNode current) (right current) : crumbs)
 
-goDown (HintNode NoNode hint slantNode, crumbs) = error "nothing down"
+goDown (HintNode{down = NoNode}, _) = error "nothing down"
 
-goDown (HintNode down hint slantNode, crumbs) =
-	(down,
-	 DownCrumb hint slantNode NoNode : crumbs)
+goDown (current@HintNode{}, crumbs) =
+	(down current,
+	 DownCrumb (hint current) (slantNode current) NoNode : crumbs)
 
 
 --
