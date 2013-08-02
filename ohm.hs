@@ -1,6 +1,6 @@
 -- SlantNode: / or \
 data SlantNode = Slash | BackSlash | NoSlant
-        deriving (Show)
+        deriving (Show, Eq)
 
 type SlantNode' = Maybe SlantNode
 
@@ -18,7 +18,7 @@ data HintTree = TopHintNode {
 			hint :: Hint,
 			slantNode :: SlantNode'}
               | NoNode
-              deriving (Show)
+              deriving (Show, Eq)
 
 type TreeAddition = HintTree -> HintTree -> HintTree
 
@@ -30,7 +30,7 @@ data SlantCrumb = DownCrumb {
 			crumbHint :: Hint,
 			crumbSlantNode :: SlantNode',
 			crumbDown :: HintTree}
-                deriving (Show)
+                deriving (Show, Eq)
 		-- | TwoDownCrumb {
 		-- 	crumbHint :: Hint,
 		-- 	crumbSlantNode :: SlantNode'}
