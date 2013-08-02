@@ -161,8 +161,11 @@ addRightAt :: HintTree -> SlantZipper -> SlantZipper
 -- TODO: allow only for TopHintNode ?
 addRightAt new (current, crumbs) = (current{right = new}, crumbs)
 
-test_top = (mkTopNode, [])
+test_top = (mkTopMostNode, [])
+-- Read backwards...
 test_board' =
-	addRightAt mkNode $
+	setHintAt (Just 0) $ goTop $
+	addDownAt mkNode $ goRight $
+	addRightAt mkTopNode $
 	addDownAt mkNode $
 	test_top
