@@ -163,4 +163,10 @@ test_board =
 		(Just 1)
 		(Just NoSlant)
 
+test_top = (mkTopNode, [])
+test_board' =
+	addRightAt mkNode $
+	addDownAt mkNode $
+	test_top
+
 test_zip = (test_board, [])
