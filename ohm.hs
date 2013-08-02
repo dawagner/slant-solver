@@ -37,11 +37,19 @@ data SlantCrumb = DownCrumb {
 
 type SlantZipper = (HintTree, [SlantCrumb])
 
+mkTopMostNode :: HintTree
+mkTopMostNode = TopHintNode NoNode NoNode Nothing (Just NoSlant)
+
 mkTopNode :: HintTree
-mkTopNode = TopHintNode NoNode NoNode Nothing Nothing 
+mkTopNode = TopHintNode NoNode NoNode Nothing Nothing
+mkTopNode' :: HintTree
+mkTopNode' = TopHintNode NoNode NoNode Nothing (Just NoSlant)
 
 mkNode :: HintTree
 mkNode = HintNode NoNode Nothing Nothing
+mkNode' :: HintTree
+mkNode' = HintNode NoNode Nothing (Just NoSlant)
+
 
 addRight :: TreeAddition
 addRight root@TopHintNode{right = NoNode} new =
