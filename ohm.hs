@@ -132,14 +132,14 @@ goTop zip@(node, crumbs) = goTop (goUp zip)
 --
 -- change Hint At
 --
-setHintAt :: SlantZipper -> Hint -> SlantZipper
-setHintAt (node, crumbs) hint = (node{hint = hint}, crumbs)
+setHintAt :: Hint -> SlantZipper -> SlantZipper
+setHintAt hint (node, crumbs) = (node{hint = hint}, crumbs)
 
 --
 -- change Slant At
 --
-setSlantAt :: SlantZipper -> SlantNode' -> SlantZipper
-setSlantAt (node, crumbs) slant = (node{slantNode = slant}, crumbs)
+setSlantAt :: SlantNode' -> SlantZipper -> SlantZipper
+setSlantAt slant (node, crumbs) = (node{slantNode = slant}, crumbs)
 
 --
 -- add a node at
