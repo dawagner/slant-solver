@@ -9,7 +9,7 @@ type Hint = Maybe Int
 -- TopHintNode down right? hint? south-east-slant?
 -- HintNode down? hint? south-east-slant?
 data HintTree = TopHintNode {
-			hint:: Hint,
+			hint :: Hint,
 			slantNode :: SlantNode',
 			down :: HintTree,
 			right :: HintTree}
