@@ -144,12 +144,12 @@ setSlantAt (node, crumbs) slant = (node{slantNode = slant}, crumbs)
 --
 -- add a node at
 --
-addDownAt :: SlantZipper -> HintTree -> SlantZipper
-addDownAt (current, crumbs) new = (current{down = new}, crumbs)
+addDownAt :: HintTree -> SlantZipper -> SlantZipper
+addDownAt new (current, crumbs) = (current{down = new}, crumbs)
 
-addRightAt :: SlantZipper -> HintTree -> SlantZipper
+addRightAt :: HintTree -> SlantZipper -> SlantZipper
 -- TODO: allow only for TopHintNode ?
-addRightAt (current, crumbs) new = (current{right = new}, crumbs)
+addRightAt new (current, crumbs) = (current{right = new}, crumbs)
 
 test_board :: HintTree
 test_board =
