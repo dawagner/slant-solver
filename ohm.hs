@@ -9,14 +9,14 @@ type Hint = Maybe Int
 -- TopHintNode down right? hint? south-east-slant?
 -- HintNode down? hint? south-east-slant?
 data HintTree = TopHintNode {
-			down :: HintTree,
-			right :: HintTree,
 			hint:: Hint,
-			slantNode :: SlantNode'}
-              | HintNode {
+			slantNode :: SlantNode',
 			down :: HintTree,
+			right :: HintTree}
+              | HintNode {
 			hint :: Hint,
-			slantNode :: SlantNode'}
+			slantNode :: SlantNode',
+			down :: HintTree}
               | NoNode
               deriving (Show, Eq)
 
