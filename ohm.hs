@@ -110,6 +110,8 @@ goUp (current@TopHintNode{}, RightCrumb hint slantNode down@(HintNode{}) : cs) =
 	(TopHintNode{right = current, down = down, hint = hint, slantNode = slantNode},
 	 cs)
 
+goUp (_, []) = error "Already on top"
+
 
 goTop :: SlantZipper -> SlantZipper
 goTop zip@(node, []) = zip
