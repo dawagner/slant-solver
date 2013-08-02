@@ -80,12 +80,14 @@ goRight node@(HintNode down hint slantNode, crumbs) =
 --
 goDown :: SlantZipper -> SlantZipper
 goDown (TopHintNode down right hint slantNode, crumbs) =
-	(down, DownCrumb hint slantNode right : crumbs)
+	(down,
+	 DownCrumb hint slantNode right : crumbs)
 
 goDown (HintNode NoNode hint slantNode, crumbs) = error "nothing down"
 
 goDown (HintNode down hint slantNode, crumbs) =
-	(down, DownCrumb hint slantNode NoNode : crumbs)
+	(down,
+	 DownCrumb hint slantNode NoNode : crumbs)
 
 
 --
