@@ -125,6 +125,16 @@ goTop zip@(node, crumbs) = goTop (goUp zip)
 setHintAt :: SlantZipper -> Hint -> SlantZipper
 setHintAt (node, crumbs) hint = (node{hint = hint}, crumbs)
 
+--
+-- add a node at
+--
+addDownAt :: SlantZipper -> HintTree -> SlantZipper
+addDownAt (current, crumbs) new = (current{down = new}, crumbs)
+
+addRightAt :: SlantZipper -> HintTree -> SlantZipper
+-- TODO: allow only for TopHintNode ?
+addRightAt (current, crumbs) new = (current{right = new}, crumbs)
+
 test_board :: HintTree
 test_board =
 	TopHintNode 
